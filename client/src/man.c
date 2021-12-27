@@ -1,5 +1,6 @@
 #include "../inc/map.h"
 #include "../inc/man.h"
+#include <stdlib.h>
 #include <stdio.h>
 
 int8_t man_x;
@@ -26,10 +27,24 @@ static void man_disp()
     test_map[man_x][man_y] = 1;
 }
 
+static int32_t man_get_key()
+{
+    int32_t tmp_char;
+
+    system("stty -echo");
+    system("stty -icanon");
+    tmp_char = getchar();
+    system("stty icanon");
+    system("stty echo");
+
+    return tmp_char;
+}
+
 void man_move()
 {
     man_claer();
-    int32_t tmp_char = getchar();
+    
+    int32_t tmp_char = man_get_key();
     switch (tmp_char) {
     case 'w':
         man_x -= 1;
