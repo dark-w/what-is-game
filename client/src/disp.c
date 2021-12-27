@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include "../inc/define.h"
 #include "../inc/map.h"
+#include "../inc/user.h"
 
 void disp_base(const uint8_t tmp_date)
 {
@@ -9,7 +10,7 @@ void disp_base(const uint8_t tmp_date)
         printf("  ");
         break;
     case 1:
-        printf("人");
+        printf("%s", user_attributes.name);
         break;
     default:
         break;
