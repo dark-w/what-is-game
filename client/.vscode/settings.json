@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "user.h": "c",
+        "curses.h": "c",
+        "map.h": "c"
+    }
+}

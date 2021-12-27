@@ -7,6 +7,6 @@
 void init_man();
 static void man_clear();
 static void man_disp();
-void man_move();
+void *man_move();
 
 #endif

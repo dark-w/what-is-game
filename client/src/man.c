@@ -2,6 +2,7 @@
 #include "../inc/man.h"
 #include <stdlib.h>
 #include <stdio.h>
+#include <curses.h>
 
 int8_t man_x;
 int8_t man_y;
@@ -20,8 +21,8 @@ static void man_claer()
 
 static void man_disp()
 {
-    if (man_x > 9) man_x = 9;
-    if (man_y > 9) man_y = 9;
+    if (man_x > map_length - 1) man_x = map_length - 1;
+    if (man_y > map_width - 1) man_y = map_width - 1;
     if (man_x < 0) man_x = 0;
     if (man_y < 0) man_y = 0;
     test_map[man_x][man_y] = 1;
@@ -40,26 +41,28 @@ static int32_t man_get_key()
     return tmp_char;
 }
 
-void man_move()
+void *man_move()
 {
-    man_claer();
-    
-    int32_t tmp_char = man_get_key();
-    switch (tmp_char) {
-    case 'w':
-        man_x -= 1;
-        break;
-    case 's':
-        man_x += 1;
-        break;
-    case 'a':
-        man_y -= 1;
-        break;
-    case 'd':
-        man_y += 1;
-        break;
-    default:
-        break;
+    while (1) {
+        int32_t tmp_char = getch();
+        man_claer();
+        switch (tmp_char) {
+        case 'w':
+            if (test_map[man_x - 1][man_y] == 0) man_x -= 1;
+            break;
+        case 's':
+            if (test_map[man_x + 1][man_y] == 0) man_x += 1;
+            break;
+        case 'a':
+            if (test_map[man_x][man_y - 1] == 0) man_y -= 1;
+            break;
+        case 'd':
+            if (test_map[man_x][man_y + 1] == 0) man_y += 1;
+            break;
+        default:
+            break;
+        }
+        man_disp();
     }
-    man_disp();
+   
 }
