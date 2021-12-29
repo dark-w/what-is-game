@@ -1,0 +1,8 @@
+[Unit]
+Description=Game Server
+
+[Service]
+ExecStart=/opt/game-server/start.sh
+
+[Install]
+WantedBy=multi-user.target
