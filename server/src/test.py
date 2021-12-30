@@ -1,24 +1,94 @@
 import socket
 import json
 import collections
+import sys
+import threading
+import os
+import signal
+import server_env
+
+
+if len(sys.argv) != 4:
+    print("usage: python test.py id x y\n"
+          "example: python test.py 1 8 8")
+    exit(-1)
 
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server_addr = ('127.0.0.1', 55558)
+server_addr = ('127.0.0.1', server_env.PORT)
+
+
 client_socket.connect(server_addr)
 
-data = collections.OrderedDict()
-data['x'] = 1
-data['y'] = 2
-data['type'] = 'user_location'
-data['name'] = 'nick'
-data['id'] = 0
-data['netstat'] = 'on'
-data_json = json.dumps(data)
-client_socket.send(data_json.encode())
+
+def display_func():
+    while True:
+        data_recv = client_socket.recv(1024)
+        data_recv_json = json.loads(data_recv)
+
+        type = data_recv_json.get('type')
+        if type == 'map':
+            map_base = data_recv_json.get('map_base')
+            os.system('clear')
+            print()
+            for i in map_base:
+                for j in i:
+                    print(j, end="")
+                print()
+            print()
+
+
+thread_display = threading.Thread(
+    target=display_func, daemon=True)
+thread_display.start()
+
+# user add
+user_add_data = collections.OrderedDict()
+user_add_data['type'] = 'control'
+user_add_data['action'] = 'user_add'
+user_add_data['x'] = int(sys.argv[2])
+user_add_data['y'] = int(sys.argv[3])
+user_add_data['id'] = int(sys.argv[1])
+user_add_data['name'] = 'dark'
+user_add_data_json = json.dumps(user_add_data)
+client_socket.send(user_add_data_json.encode())
+
+
+def exit_callback(signum, frame):
+    print('You choose to stop me.')
+    user_remove_data = collections.OrderedDict()
+    user_remove_data['id'] = user_add_data['id']
+    user_remove_data['type'] = 'control'
+    user_remove_data['action'] = 'user_remove'
+    user_remove_data_json = json.dumps(user_remove_data)
+    client_socket.send(user_remove_data_json.encode())
+
+    client_socket.close()
+    exit(0)
+
+
+signal.signal(signal.SIGINT, exit_callback)
+signal.signal(signal.SIGTERM, exit_callback)
+
+# user move
+user_move_data = collections.OrderedDict()
+user_move_data['type'] = 'control'
+user_move_data['action'] = 'user_move'
+user_move_data['id'] = user_add_data['id']
 
 while True:
-    recv_data = client_socket.recv(1024)
-    recv_data_json = json.loads(recv_data)
-    print(recv_data_json)
+    input_str = input()
+    if input_str == 'w':
+        user_move_data['direction'] = 'up'
+    elif input_str == 's':
+        user_move_data['direction'] = 'down'
+    elif input_str == 'a':
+        user_move_data['direction'] = 'left'
+    elif input_str == 'd':
+        user_move_data['direction'] = 'right'
+    elif input_str == 'q':
+        break
+
+    user_move_data_json = json.dumps(user_move_data)
+    client_socket.send(user_move_data_json.encode())
 
 client_socket.close()

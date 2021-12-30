@@ -1,0 +1,24 @@
+map:
+  name: main
+  width: 20
+  height: 10
+  values:
+    bg: 0
+    line: 1
+    user-0: 2
+  lines:
+    -
+      src: [0, 0]
+      dst: [0, 9]
+    -
+      src: [19, 0]
+      dst: [0, 0]
+    -
+      src: [19, 0]
+      dst: [19, 9]
+    -
+      src: [0, 9]
+      dst: [19, 9]
+    -
+      src: [3, 4]
+      dst: [3, 7]
