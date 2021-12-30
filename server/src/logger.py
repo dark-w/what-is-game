@@ -5,7 +5,7 @@ import server_env
 
 class logger:
     def __init__(self, log_level='DEBUG'):
-        filename = "{}/game_server.log".format(server_env.GAME_SERVER_HOME)
+        filename = "{}/game_server.log".format(server_env.GAME_SERVER_LOG_HOME)
         print(filename)
         self.fmt = '%(asctime)s %(levelname)s %(message)s'
 
