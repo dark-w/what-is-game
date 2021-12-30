@@ -54,14 +54,14 @@ class map:
                     small = src_point[1] if src_point[1] < dst_point[1] else dst_point[1]
                     big = src_point[1] if src_point[1] > dst_point[1] else dst_point[1]
                     for i in range(small, big + 1):
-                        print(i)
+                        # print(i)
                         self.map_base[i][src_point[0]
                                          ] = self.map_values_line_point
                 else:
                     small = src_point[0] if src_point[0] < dst_point[0] else dst_point[0]
                     big = src_point[0] if src_point[0] > dst_point[0] else dst_point[0]
                     for i in range(small, big + 1):
-                        print(i)
+                        # print(i)
                         self.map_base[src_point[1]
                                       ][i] = self.map_values_line_point
 
