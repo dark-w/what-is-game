@@ -210,9 +210,8 @@ class server:
         self.addr = (server_env.IP, server_env.PORT)
         self.logger = logger.log
         self.clients = []
-        self.map = map('demo.yaml', self)
+        self.map = map("{}/src/demo.yaml".format(server_env.GAME_SERVER_HOME), self)
         
-
     def start(self):
         self.socket.bind(self.addr)
         self.logger.info("bind ok")
