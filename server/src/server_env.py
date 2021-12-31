@@ -1,6 +1,6 @@
 GAME_SERVER_LOG_HOME = '/var/log/game-server'
 IP = '10.0.12.11'
-PORT = 55564
+PORT = 55565
 
 # test
 GAME_SERVER_LOG_HOME = '.'

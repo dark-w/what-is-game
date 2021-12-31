@@ -8,6 +8,8 @@ import yaml
 import time
 import os
 import pdb
+import copy
+import queue
 
 import server_env
 
@@ -21,11 +23,39 @@ class user:
         self.name = name
         self.id = id
 
+        self.hp_full = 3
+        self.hp_now = self.hp_full
+        
+class bullet:
+    def __init__(self, user: user, direction, v) -> None:
+        self.speed = 1
+        self.damage = 1
+        self.direction = direction
+        self.v = v
+        self.timer = time.time()
+
+        self.user = user
+        self.x = user.x
+        self.y = user.y
+
+        if direction == 'up':
+            self.x += 1
+        elif direction == 'down':
+            self.x -= 1
+        elif direction == 'left':
+            self.y -= 1
+        elif direction == 'right':
+            self.y += 1
 
 class map:
-    def __init__(self, config_fn: str) -> None:
+    def __init__(self, config_fn: str, server) -> None:
+        self.server = server
+
         # objs
         self.users = []
+        self.bullets = []
+
+        self.map_operate_lock = threading.Lock()
 
         # map init
         with open(config_fn, 'r', encoding='utf-8') as config_file:
@@ -38,6 +68,7 @@ class map:
             self.map_values_line_point = map_values.get('line')
             self.map_values_bg_point = map_values.get('bg')
             self.map_values_user_0 = map_values.get('user-0')
+            self.map_values_bullet_0 = map_values.get('bullet-0')
 
             self.map_base = []
             for i in range(self.map_height):
@@ -66,17 +97,26 @@ class map:
                                       ][i] = self.map_values_line_point
 
     def user_add(self, user: user):
+        self.map_operate_lock.acquire()
+
         self.users.append(user)
         if self.map_base[user.x][user.y] == self.map_values_bg_point:
             self.map_base[user.x][user.y] += user.v
 
+        self.map_operate_lock.release()
+
     def user_remove(self, user: user):
+        self.map_operate_lock.acquire()
+
         if user in self.users:
             self.users.remove(user)
             self.map_base[user.x][user.y] -= user.v
 
+        self.map_operate_lock.release()
+
     def user_move(self, direction, user):
-        # pdb.set_trace()
+        self.map_operate_lock.acquire()
+
         if direction == 'up':
             if self.map_base[user.x + 1][user.y] == self.map_values_bg_point:
                 self.map_base[user.x][user.y] -= user.v
@@ -97,10 +137,48 @@ class map:
                 self.map_base[user.x][user.y] -= user.v
                 user.y += 1
                 self.map_base[user.x][user.y] += user.v
-    # TODO
 
-    def loop(self):
-        pass
+        self.map_operate_lock.release()
+
+    def bullet_shoot(self, b: bullet):
+        direction = b.direction
+        if self.map_base[b.x][b.y] == self.map_values_bg_point:
+            self.bullets.append(b)
+            self.map_base[b.x][b.y] = b.v
+
+    def bullets_loop(self):
+        start_time = time.time()
+        while True:
+            if len(self.bullets) > 0:
+                for b in self.bullets:
+                    direction = b.direction
+                    v = b.v
+                    speed = b.speed
+                    if time.time() - b.timer > speed:
+                        if direction == 'up':
+                            if self.map_base[b.x + 1][b.y] == self.map_values_bg_point:
+                                self.map_base[b.x][b.y] -= v
+                                b.x += 1
+                                self.map_base[b.x][b.y] += v
+                        elif direction == 'down':
+                            if self.map_base[b.x - 1][b.y] == self.map_values_bg_point:
+                                self.map_base[b.x][b.y] -= v
+                                b.x -= 1
+                                self.map_base[b.x][b.y] += v
+                        elif direction == 'left':
+                            if self.map_base[b.x][b.y - 1] == self.map_values_bg_point:
+                                self.map_base[b.x][b.y] -= v
+                                b.y -= 1
+                                self.map_base[b.x][b.y] += v
+                        elif direction == 'right':
+                            if self.map_base[b.x][b.y + 1] == self.map_values_bg_point:
+                                self.map_base[b.x][b.y] -= v
+                                b.y += 1
+                                self.map_base[b.x][b.y] += v
+                        b.timer = time.time()
+                if time.time() - start_time > 1:
+                    self.server.broadcast_map()
+                    start_time = time.time()
 
     def debug_show(self):
         os.system('clear')
@@ -117,7 +195,12 @@ class map:
         retval['type'] = 'map'
         retval['width'] = self.map_width
         retval['height'] = self.map_height
-        retval['map_base'] = self.map_base
+
+        # retval['map_base'] = self.map_base
+        self.map_operate_lock.acquire()
+        retval['map_base'] = copy.deepcopy(self.map_base)
+        self.map_operate_lock.release()
+
         return json.dumps(retval)
 
 
@@ -127,11 +210,8 @@ class server:
         self.addr = (server_env.IP, server_env.PORT)
         self.logger = logger.log
         self.clients = []
-        self.map = map('demo.yaml')
-
-    def __map_data_broadcast(self):
-        while True:
-            pass
+        self.map = map('demo.yaml', self)
+        
 
     def start(self):
         self.socket.bind(self.addr)
@@ -140,11 +220,11 @@ class server:
         self.socket.listen(5)
         self.logger.info("listen ok")
 
-        thread_map_data_broadcast = threading.Thread(
-            target=self.__map_data_broadcast, daemon=True)
-        thread_map_data_broadcast.start()
+        thread_bullets_loop = threading.Thread(
+            target=self.map.bullets_loop, daemon=True)
+        thread_bullets_loop.start()
 
-        self.__broadcast_map()
+        self.broadcast_map()
 
         while True:
             self.logger.info("accepting...")
@@ -169,9 +249,9 @@ class server:
                 self.logger.info(data_json)
 
                 data_type = data_json.get('type')
-                # {'type': 'control', 'action': 'user_move', 'id': 1, 'direction': 'up'}
+                data_id = data_json.get('id')
+                
                 if data_type == 'control':
-                    # pdb.set_trace()
                     data_action = data_json.get('action')
                     if data_action == 'user_add':
                         __handle_user.name = data_json.get('name')
@@ -190,8 +270,14 @@ class server:
                         data_id = data_json.get('id')
                         if data_id == __handle_user.id:
                             self.map.user_remove(__handle_user)
+                    elif data_action == 'bullet_shoot':
+                        data_id = data_json.get('id')
+                        data_direction = data_json.get('direction')
+                        if data_id == __handle_user.id:
+                            b = bullet(__handle_user, data_direction, self.map.map_values_bullet_0)
+                            self.map.bullet_shoot(b)
 
-                self.__broadcast_map()
+                self.broadcast_map()
             except Exception as e:
                 self.logger.error(e.args)
                 break
@@ -206,7 +292,8 @@ class server:
             if myself_sock != sock:
                 sock.send(data)
 
-    def __broadcast_map(self):
+    def broadcast_map(self):
+        # self.map.debug_show()
         map_data = self.map.dumps()
         for sock, addr in self.clients:
             sock.send(map_data.encode())

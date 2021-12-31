@@ -6,6 +6,7 @@ map:
     bg: 0
     line: 1
     user-0: 2
+    bullet-0: 3
   lines:
     -
       src: [0, 0]

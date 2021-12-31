@@ -52,16 +52,16 @@ user_add_data['name'] = 'dark'
 user_add_data_json = json.dumps(user_add_data)
 client_socket.send(user_add_data_json.encode())
 
+user_remove_data = collections.OrderedDict()
+user_remove_data['id'] = user_add_data['id']
+user_remove_data['type'] = 'control'
+user_remove_data['action'] = 'user_remove'
+user_remove_data_json = json.dumps(user_remove_data)
+
 
 def exit_callback(signum, frame):
     print('You choose to stop me.')
-    user_remove_data = collections.OrderedDict()
-    user_remove_data['id'] = user_add_data['id']
-    user_remove_data['type'] = 'control'
-    user_remove_data['action'] = 'user_remove'
-    user_remove_data_json = json.dumps(user_remove_data)
     client_socket.send(user_remove_data_json.encode())
-
     client_socket.close()
     exit(0)
 
@@ -75,20 +75,42 @@ user_move_data['type'] = 'control'
 user_move_data['action'] = 'user_move'
 user_move_data['id'] = user_add_data['id']
 
+# bullet shoot
+user_bullet_shoot_data = collections.OrderedDict()
+user_bullet_shoot_data['type'] = 'control'
+user_bullet_shoot_data['action'] = 'bullet_shoot'
+user_bullet_shoot_data['id'] = user_add_data['id']
+
+user_move_key = ['w', 's', 'a', 'd']
+bullet_shoot_key = ['i', 'k', 'j', 'l']
 while True:
     input_str = input()
-    if input_str == 'w':
-        user_move_data['direction'] = 'up'
-    elif input_str == 's':
-        user_move_data['direction'] = 'down'
-    elif input_str == 'a':
-        user_move_data['direction'] = 'left'
-    elif input_str == 'd':
-        user_move_data['direction'] = 'right'
+
+    if input_str in user_move_key:
+        if input_str == 'w':
+            user_move_data['direction'] = 'up'
+        elif input_str == 's':
+            user_move_data['direction'] = 'down'
+        elif input_str == 'a':
+            user_move_data['direction'] = 'left'
+        elif input_str == 'd':
+            user_move_data['direction'] = 'right'
+
+        user_move_data_json = json.dumps(user_move_data)
+        client_socket.send(user_move_data_json.encode())
+    elif input_str in bullet_shoot_key:
+        if input_str == 'i':
+            user_bullet_shoot_data['direction'] = 'up'
+        elif input_str == 'k':
+            user_bullet_shoot_data['direction'] = 'down'
+        elif input_str == 'j':
+            user_bullet_shoot_data['direction'] = 'left'
+        elif input_str == 'l':
+            user_bullet_shoot_data['direction'] = 'right'
+
+        bullet_shoot_data_json = json.dumps(user_bullet_shoot_data)
+        client_socket.send(bullet_shoot_data_json.encode())
     elif input_str == 'q':
         break
-
-    user_move_data_json = json.dumps(user_move_data)
-    client_socket.send(user_move_data_json.encode())
-
+client_socket.send(user_remove_data_json.encode())
 client_socket.close()
