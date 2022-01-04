@@ -20,6 +20,9 @@ class user:
         self.y = y
         self.v = v
 
+        self.init_x = x
+        self.init_y = y
+
         self.name = name
         self.id = id
 
@@ -117,26 +120,33 @@ class map:
     def user_move(self, direction, user):
         self.map_operate_lock.acquire()
 
+        x_value = 0
+        y_value = 0
         if direction == 'up':
-            if self.map_base[user.x + 1][user.y] == self.map_values_bg_point:
-                self.map_base[user.x][user.y] -= user.v
-                user.x += 1
-                self.map_base[user.x][user.y] += user.v
+            x_value = 1
         elif direction == 'down':
-            if self.map_base[user.x - 1][user.y] == self.map_values_bg_point:
-                self.map_base[user.x][user.y] -= user.v
-                user.x -= 1
-                self.map_base[user.x][user.y] += user.v
+            x_value = -1
         elif direction == 'left':
-            if self.map_base[user.x][user.y - 1] == self.map_values_bg_point:
-                self.map_base[user.x][user.y] -= user.v
-                user.y -= 1
-                self.map_base[user.x][user.y] += user.v
+            y_value = -1
         elif direction == 'right':
-            if self.map_base[user.x][user.y + 1] == self.map_values_bg_point:
-                self.map_base[user.x][user.y] -= user.v
-                user.y += 1
-                self.map_base[user.x][user.y] += user.v
+            y_value = 1
+
+        if self.map_base[user.x + x_value][user.y + y_value] == self.map_values_bg_point:
+            self.map_base[user.x][user.y] -= user.v
+            user.x += x_value
+            user.y += y_value
+            self.map_base[user.x][user.y] += user.v
+
+        self.map_operate_lock.release()
+
+    def user_teleport(self, user, x, y):
+        self.map_operate_lock.acquire()
+
+        if self.map_base[x][y] == self.map_values_bg_point:
+            self.map_base[user.x][user.y] -= user.v
+            user.x = x
+            user.y = y
+            self.map_base[user.x][user.y] += user.v
 
         self.map_operate_lock.release()
 
@@ -155,30 +165,41 @@ class map:
                     v = b.v
                     speed = b.speed
                     if time.time() - b.timer > speed:
+                        x_value = 0
+                        y_value = 0
                         if direction == 'up':
-                            if self.map_base[b.x + 1][b.y] == self.map_values_bg_point:
-                                self.map_base[b.x][b.y] -= v
-                                b.x += 1
-                                self.map_base[b.x][b.y] += v
+                            x_value = 1
                         elif direction == 'down':
-                            if self.map_base[b.x - 1][b.y] == self.map_values_bg_point:
-                                self.map_base[b.x][b.y] -= v
-                                b.x -= 1
-                                self.map_base[b.x][b.y] += v
+                            x_value = -1
                         elif direction == 'left':
-                            if self.map_base[b.x][b.y - 1] == self.map_values_bg_point:
-                                self.map_base[b.x][b.y] -= v
-                                b.y -= 1
-                                self.map_base[b.x][b.y] += v
+                            y_value = -1
                         elif direction == 'right':
-                            if self.map_base[b.x][b.y + 1] == self.map_values_bg_point:
-                                self.map_base[b.x][b.y] -= v
-                                b.y += 1
-                                self.map_base[b.x][b.y] += v
+                            y_value = 1
+
+                        if self.map_base[b.x + x_value][b.y + y_value] == self.map_values_bg_point:
+                            self.map_base[b.x][b.y] -= v
+                            b.x += x_value
+                            b.y += y_value
+                            self.map_base[b.x][b.y] += v
+                        elif self.map_base[b.x + x_value][b.y + y_value] == self.map_values_line_point:
+                            self.map_base[b.x][b.y] -= v
+                            self.bullets.remove(b)
+                        elif self.map_base[b.x + x_value][b.y + y_value] == self.map_values_user_0:
+                            for u in self.users:
+                                if u.x == b.x + x_value and u.y == b.y + y_value \
+                                    and u.id != b.user.id:
+                                    # bullet clean
+                                    self.map_base[b.x][b.y] -= b.v
+                                    self.bullets.remove(b)
+
+                                    # user teleport
+                                    self.user_teleport(u, u.init_x, u.init_y)
+
+                                    break
+
+                        self.server.broadcast_map()
                         b.timer = time.time()
-                if time.time() - start_time > 1:
-                    self.server.broadcast_map()
-                    start_time = time.time()
+                        
 
     def debug_show(self):
         os.system('clear')
@@ -210,7 +231,7 @@ class server:
         self.addr = (server_env.IP, server_env.PORT)
         self.logger = logger.log
         self.clients = []
-        self.map = map("{}/src/demo.yaml".format(server_env.GAME_SERVER_HOME), self)
+        self.map = map("{}/demo.yaml".format(server_env.GAME_SERVER_HOME), self)
         
     def start(self):
         self.socket.bind(self.addr)
@@ -257,6 +278,8 @@ class server:
                         __handle_user.id = data_json.get('id')
                         __handle_user.x = data_json.get('x')
                         __handle_user.y = data_json.get('y')
+                        __handle_user.init_x = __handle_user.x
+                        __handle_user.init_y = __handle_user.y
                         __handle_user.v = self.map.map_values_user_0
 
                         self.map.user_add(__handle_user)

@@ -14,8 +14,8 @@ if len(sys.argv) != 4:
     exit(-1)
 
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-# server_addr = ('127.0.0.1', server_env.PORT)
-server_addr = ('150.158.214.239', server_env.PORT)
+server_addr = ('127.0.0.1', server_env.PORT)
+# server_addr = ('150.158.214.239', server_env.PORT)
 
 
 client_socket.connect(server_addr)
@@ -33,7 +33,14 @@ def display_func():
             print()
             for i in map_base:
                 for j in i:
-                    print(j, end="")
+                    if j == 0:
+                        print(' ', end="")
+                    elif j == 1:
+                        print('*', end="")
+                    elif j == 2:
+                        print('O', end="")
+                    elif j == 3:
+                        print('.', end="")
                 print()
             print()
 
