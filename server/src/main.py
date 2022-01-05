@@ -102,8 +102,8 @@ class map:
     def user_add(self, user: user):
         self.map_operate_lock.acquire()
 
-        self.users.append(user)
         if self.map_base[user.x][user.y] == self.map_values_bg_point:
+            self.users.append(user)
             self.map_base[user.x][user.y] += user.v
 
         self.map_operate_lock.release()
@@ -164,7 +164,7 @@ class map:
                     direction = b.direction
                     v = b.v
                     speed = b.speed
-                    if time.time() - b.timer > speed:
+                    if time.time() - b.timer > speed / 20:
                         x_value = 0
                         y_value = 0
                         if direction == 'up':
@@ -309,16 +309,15 @@ class server:
         self.map.user_remove(__handle_user)
         client_socket.close()
 
-    def __broadcast_not_myself(self, myself_sock, data):
-        for sock, addr in self.clients:
-            if myself_sock != sock:
-                sock.send(data)
-
     def broadcast_map(self):
         # self.map.debug_show()
         map_data = self.map.dumps()
         for sock, addr in self.clients:
-            sock.send(map_data.encode())
+            try:
+                sock.send((map_data + '\n').encode())
+            except BrokenPipeError as e:
+                self.logger.error(e.args) # FIXME
+                continue
 
 
 if __name__ == '__main__':

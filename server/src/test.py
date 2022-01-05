@@ -18,31 +18,45 @@ client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 # server_addr = ('127.0.0.1', server_env.PORT)
 server_addr = ('150.158.214.239', server_env.PORT)
 
-
 client_socket.connect(server_addr)
 
+
+def display(map_json):
+    data_recv_json = json.loads(map_json)
+
+    type = data_recv_json.get('type')
+    if type == 'map':
+        map_base = data_recv_json.get('map_base')
+        os.system('clear')
+        print()
+        for i in map_base:
+            for j in i:
+                if j == 0:
+                    print(' ', end="")
+                elif j == 1:
+                    print('*', end="")
+                elif j == 2:
+                    print('O', end="")
+                elif j == 3:
+                    print('.', end="")
+            print()
+        print()
+
+
 def display_func():
+    _databuf = ''
     while True:
         data_recv = client_socket.recv(4096)
-        data_recv_json = json.loads(data_recv)
 
-        type = data_recv_json.get('type')
-        if type == 'map':
-            map_base = data_recv_json.get('map_base')
-            os.system('clear')
-            print()
-            for i in map_base:
-                for j in i:
-                    if j == 0:
-                        print(' ', end="")
-                    elif j == 1:
-                        print('*', end="")
-                    elif j == 2:
-                        print('O', end="")
-                    elif j == 3:
-                        print('.', end="")
-                print()
-            print()
+        data = _databuf + data_recv.decode('utf-8')
+
+        while (data.__contains__('\n')):
+            process = data[0: data.index('\n') + 1]
+            data = data[data.index('\n') + 1: data.__len__()]
+            display(process)
+
+        # 缓存剩下的粘连数据
+        _databuf = data
 
 
 thread_display = threading.Thread(
@@ -97,9 +111,9 @@ while True:
     input_str = input()
     # input_str = sys.stdin.read(1)
     if input_str in user_move_key:
-        if input_str == 'w':
+        if input_str == 's':
             user_move_data['direction'] = 'up'
-        elif input_str == 's':
+        elif input_str == 'w':
             user_move_data['direction'] = 'down'
         elif input_str == 'a':
             user_move_data['direction'] = 'left'
@@ -109,9 +123,9 @@ while True:
         user_move_data_json = json.dumps(user_move_data)
         client_socket.send(user_move_data_json.encode())
     elif input_str in bullet_shoot_key:
-        if input_str == 'i':
+        if input_str == 'k':
             user_bullet_shoot_data['direction'] = 'up'
-        elif input_str == 'k':
+        elif input_str == 'i':
             user_bullet_shoot_data['direction'] = 'down'
         elif input_str == 'j':
             user_bullet_shoot_data['direction'] = 'left'
