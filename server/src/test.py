@@ -5,7 +5,6 @@ import sys
 import threading
 import os
 import signal
-import getch
 
 import server_env
 
