@@ -128,7 +128,10 @@ while True:
             user_move_data['direction'] = 'right'
 
         user_move_data_json = json.dumps(user_move_data)
-        client_socket.send(user_move_data_json.encode())
+        try:
+            client_socket.send(user_move_data_json.encode())
+        except BrokenPipeError as e:
+            continue
     elif input_str in bullet_shoot_key:
         if input_str == 'k':
             user_bullet_shoot_data['direction'] = 'up'
@@ -140,7 +143,10 @@ while True:
             user_bullet_shoot_data['direction'] = 'right'
 
         bullet_shoot_data_json = json.dumps(user_bullet_shoot_data)
-        client_socket.send(bullet_shoot_data_json.encode())
+        try:
+            client_socket.send(bullet_shoot_data_json.encode())
+        except BrokenPipeError as e:
+            continue
     elif input_str == 'q':
         break
 client_socket.send(user_remove_data_json.encode())
