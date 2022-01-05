@@ -5,6 +5,8 @@ import sys
 import threading
 import os
 import signal
+import getch
+
 import server_env
 
 
@@ -14,16 +16,15 @@ if len(sys.argv) != 4:
     exit(-1)
 
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server_addr = ('127.0.0.1', server_env.PORT)
-# server_addr = ('150.158.214.239', server_env.PORT)
+# server_addr = ('127.0.0.1', server_env.PORT)
+server_addr = ('150.158.214.239', server_env.PORT)
 
 
 client_socket.connect(server_addr)
 
-
 def display_func():
     while True:
-        data_recv = client_socket.recv(1024)
+        data_recv = client_socket.recv(4096)
         data_recv_json = json.loads(data_recv)
 
         type = data_recv_json.get('type')
@@ -91,9 +92,11 @@ user_bullet_shoot_data['id'] = user_add_data['id']
 
 user_move_key = ['w', 's', 'a', 'd']
 bullet_shoot_key = ['i', 'k', 'j', 'l']
+
+
 while True:
     input_str = input()
-
+    # input_str = sys.stdin.read(1)
     if input_str in user_move_key:
         if input_str == 'w':
             user_move_data['direction'] = 'up'
