@@ -5,14 +5,21 @@ import sys
 import threading
 import os
 import signal
+import yaml
 
 import server_env
 
+with open("test-config.yaml", 'r', encoding='utf-8') as config_file:
+    config = yaml.safe_load(config_file)
+    config_root = config.get('config')
 
-if len(sys.argv) != 4:
-    print("usage: python test.py id x y\n"
-          "example: python test.py 1 8 8")
-    exit(-1)
+    user_id = config_root.get('id')
+    init_x = config_root.get('x')
+    init_y = config_root.get('y')
+# if len(sys.argv) != 4:
+#     print("usage: python test.py id x y\n"
+#           "example: python test.py 1 8 8")
+#     exit(-1)
 
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 # server_addr = ('127.0.0.1', server_env.PORT)
@@ -67,9 +74,9 @@ thread_display.start()
 user_add_data = collections.OrderedDict()
 user_add_data['type'] = 'control'
 user_add_data['action'] = 'user_add'
-user_add_data['x'] = int(sys.argv[2])
-user_add_data['y'] = int(sys.argv[3])
-user_add_data['id'] = int(sys.argv[1])
+user_add_data['x'] = int(init_x)
+user_add_data['y'] = int(init_y)
+user_add_data['id'] = int(user_id)
 user_add_data['name'] = 'dark'
 user_add_data_json = json.dumps(user_add_data)
 client_socket.send(user_add_data_json.encode())
