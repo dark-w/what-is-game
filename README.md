@@ -1,2 +1,1 @@
-# what-is-game
-What game is this?
+# X Controller
